@@ -53,6 +53,7 @@ CHIP_ERROR ChipLinuxStorage::Init(const char * configFile)
 {
     CHIP_ERROR retval = CHIP_NO_ERROR;
 
+    // 是否已经初始化过，已经初始化则直接返回
     if (mInitialized)
     {
         ChipLogError(DeviceLayer, "ChipLinuxStorage::Init: Attempt to re-initialize with KVS config file: %s, IGNORING.",
@@ -62,7 +63,9 @@ CHIP_ERROR ChipLinuxStorage::Init(const char * configFile)
 
     ChipLogDetail(DeviceLayer, "ChipLinuxStorage::Init: Using KVS config file: %s", StringOrNullMarker(configFile));
 
+    // 将configFile字符串存入mConfigPath
     mConfigPath.assign(configFile);
+    // 清理mConfigStore变量
     retval = ChipLinuxStorageIni::Init();
 
     if (retval == CHIP_NO_ERROR)
@@ -71,7 +74,7 @@ CHIP_ERROR ChipLinuxStorage::Init(const char * configFile)
 
         ifs.open(configFile, std::ifstream::in);
 
-        // Create default setting file if not exist.
+        // Create default setting file if not exist.    
         if (!ifs.good())
         {
             mDirty = true;

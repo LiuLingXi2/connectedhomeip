@@ -263,13 +263,15 @@ CHIP_ERROR BleLayer::Init(BlePlatformDelegate * platformDelegate, BleConnectionD
         return CHIP_ERROR_INCORRECT_STATE;
     }
 
-    mConnectionDelegate  = connDelegate;
+    // mConnectionDelegate mPlatformDelegate mApplicationDelegate都设为BLEMgr
+    mConnectionDelegate  = connDelegate; 
     mPlatformDelegate    = platformDelegate;
     mApplicationDelegate = appDelegate;
-    mSystemLayer         = systemLayer;
+    mSystemLayer         = systemLayer; // systemLayer为系统单例
 
     memset(&sBLEEndPointPool, 0, sizeof(sBLEEndPointPool));
 
+    // 初始化完成
     mState = kState_Initialized;
 
     return CHIP_NO_ERROR;

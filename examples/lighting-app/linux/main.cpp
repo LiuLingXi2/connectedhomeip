@@ -103,6 +103,7 @@ extern "C" {
 
 int main(int argc, char * argv[])
 {
+    // 假设现在传入的参数是--wifi
     if (ChipLinuxAppInit(argc, argv) != 0)
     {
         return -1;

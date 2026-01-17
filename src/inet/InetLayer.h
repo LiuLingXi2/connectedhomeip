@@ -77,8 +77,11 @@ public:
     CHIP_ERROR Init(System::Layer & systemLayer)
     {
         RegisterLayerErrorFormatter();
+        // 设置自己的状态为正在初始化
         VerifyOrReturnError(mLayerState.SetInitializing(), CHIP_ERROR_INCORRECT_STATE);
+        // 总系统是否已经初始化完成
         VerifyOrReturnError(systemLayer.IsInitialized(), CHIP_ERROR_INCORRECT_STATE);
+        // 初始化完成
         mSystemLayer = &systemLayer;
         mLayerState.SetInitialized();
         return CHIP_NO_ERROR;

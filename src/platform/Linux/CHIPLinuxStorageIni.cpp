@@ -74,6 +74,7 @@ CHIP_ERROR ChipLinuxStorageIni::AddConfig(const std::string & configFile)
 
     if (ifs.is_open())
     {
+        // 用于将configFile中的内容解析到mConfigStore
         mConfigStore.parse(ifs);
         ifs.close();
     }
@@ -92,16 +93,21 @@ CHIP_ERROR ChipLinuxStorageIni::AddConfig(const std::string & configFile)
 // 3. Using rename() to overwrite the existing file
 CHIP_ERROR ChipLinuxStorageIni::CommitConfig(const std::string & configFile)
 {
+    // 创建临时文件
     TemporaryFileStream tmpFile(configFile + "-XXXXXX");
+    // 检测文件是否open
     VerifyOrReturnError(
         tmpFile.IsOpen(), CHIP_ERROR_OPEN_FAILED,
         ChipLogError(DeviceLayer, "Failed to create temp file %s: %s", tmpFile.GetFileName().c_str(), strerror(errno)));
-
+    // 将内存中的mConfigStore写入到tmpFile中
+    // 不过第一次的mConfigStore被清空过
     mConfigStore.generate(tmpFile);
+    // 数据同步到磁盘
     VerifyOrReturnError(
         tmpFile.DataSync(), CHIP_ERROR_WRITE_FAILED,
         ChipLogError(DeviceLayer, "Failed to sync temp file %s: %s", tmpFile.GetFileName().c_str(), strerror(errno)));
 
+    // 直接覆盖原文件
     int rv = rename(tmpFile.GetFileName().c_str(), configFile.c_str());
     VerifyOrReturnError(rv == 0, CHIP_ERROR_WRITE_FAILED,
                         ChipLogError(DeviceLayer, "Failed to rename %s to %s: %s", tmpFile.GetFileName().c_str(),
@@ -380,6 +386,7 @@ CHIP_ERROR ChipLinuxStorageIni::RemoveEntry(const char * key)
 
 CHIP_ERROR ChipLinuxStorageIni::RemoveAll()
 {
+    // 清理该对象中的内存结构
     mConfigStore.clear();
 
     return CHIP_NO_ERROR;

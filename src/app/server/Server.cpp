@@ -112,10 +112,12 @@ static app::CircularEventBuffer sLoggingBuffer[CHIP_NUM_EVENT_LOGGING_BUFFERS];
 CHIP_ERROR Server::Init(const ServerInitParams & initParams)
 {
     ChipLogProgress(AppServer, "Server initializing...");
+    // 断言
     assertChipStackLockedByCurrentThread();
-
+    // 设置启动时间
     mInitTimestamp = System::SystemClock().GetMonotonicMicroseconds64();
 
+    // 初始化
     CASESessionManagerConfig caseSessionManagerConfig;
     DeviceLayer::DeviceInfoProvider * deviceInfoprovider = nullptr;
 
@@ -179,15 +181,20 @@ CHIP_ERROR Server::Init(const ServerInitParams & initParams)
 
     // Set up attribute persistence before we try to bring up the data model
     // handler.
+    // mDeviceStorage是对底层的KVS抽象
+    // mAttributePersister是一个适配器，内部靠mDeviceStorage读写KV
     SuccessOrExit(err = mAttributePersister.Init(mDeviceStorage));
+    // 系统里有一个全局指针，任何cluster需要安全持久化熟悉，先那到这个 ，然后再调用 mDeviceStorage去读写
     SetSafeAttributePersistenceProvider(&mAttributePersister);
 
     {
+        // 将这台设备已经配过的Fabric从闪存中读出来，装进内存的FabricTable里，并且跟密钥绑定在一起
         FabricTable::InitParams fabricTableInitParams;
         fabricTableInitParams.storage             = mDeviceStorage;
         fabricTableInitParams.operationalKeystore = mOperationalKeystore;
         fabricTableInitParams.opCertStore         = mOpCertStore;
 
+        // 这个表就是mFabrics
         err = mFabrics.Init(fabricTableInitParams);
         SuccessOrExit(err);
     }
@@ -202,6 +209,10 @@ CHIP_ERROR Server::Init(const ServerInitParams & initParams)
     }
 #endif
 
+    /**
+     * 从 KVS 里把“每个 Fabric 对应的 ACL 列表”加载出来；
+知道现在有哪些有效的 Fabric，可以按 Fabric 维度组织/清理 ACL 数据。
+     */
     mAclStorage = initParams.aclStorage;
     SuccessOrExit(err = mAclStorage->Init(*mDeviceStorage, mFabrics.begin(), mFabrics.end()));
 
@@ -216,6 +227,7 @@ CHIP_ERROR Server::Init(const ServerInitParams & initParams)
         ChipLogProgress(AppServer, "WARNING: mTestEventTriggerDelegate is null");
     }
 
+    // 把底层KVS存储mDeviceStorage接到deviceInfoprovider上，让设备信息相关的东西也能用同一款存储持久化
     deviceInfoprovider = DeviceLayer::GetDeviceInfoProvider();
     if (deviceInfoprovider)
     {
@@ -263,6 +275,9 @@ CHIP_ERROR Server::Init(const ServerInitParams & initParams)
 #endif
     );
 
+    // 组播。默认不使用
+    // 他实现了两个回调 OnGroupAdded和OnGroupRemoved
+    // 每当某个 Fabric 的某个 group 被加/删，这个 listener 会拿到通知
     SuccessOrExit(err);
     err = mListener.Init(this);
     SuccessOrExit(err);
@@ -273,22 +288,34 @@ CHIP_ERROR Server::Init(const ServerInitParams & initParams)
 #endif
     SuccessOrExit(err);
 
+    // 将mSessions设置为mTransports的delegate
     err = mSessions.Init(&DeviceLayer::SystemLayer(), &mTransports, &mMessageCounterManager, mDeviceStorage, &GetFabricTable(),
                          *mSessionKeystore);
     SuccessOrExit(err);
 
+    // 设置 FabricTable 的 delegate
+    // mFabricDelegate 实现了 OnFabricRemoved 和 OnFabricUpdated 方法
+    // 作为Fabric 的delegate，当有 Fabric 被删/改时，会走到上面两个方法
     err = mFabricDelegate.Init(this);
     SuccessOrExit(err);
     TEMPORARY_RETURN_IGNORED mFabrics.AddFabricDelegate(&mFabricDelegate);
 
+    /**
+     * 这里把它绑定到已经初始化好的 mSessions（SessionManager）上：
+SessionManager 负责“安全会话”这一层（加解密、重放保护、对端 Node/Fabric 识别）；
+ExchangeManager 建立在会话之上，负责“Exchange”（会话内的逻辑对话，比如 IM 交互、BINDING 等），帮你把 message 按 (exchangeId, protocolId) 分发到对应的 cluster/处理器。
+
+     */
     err = mExchangeMgr.Init(&mSessions);
     SuccessOrExit(err);
     err = mMessageCounterManager.Init(&mExchangeMgr);
     SuccessOrExit(err);
 
+    // 是一个专门用来处理“对方直接丢过来的 status report（状态码）”的 handler。
     err = mUnsolicitedStatusHandler.Init(&mExchangeMgr);
     SuccessOrExit(err);
 
+    // 管理“配网窗口”（commissioning window）：什么时候开放、超时时做什么、如何处理配网请求。
     SuccessOrExit(err = mCommissioningWindowManager.Init(this));
     mCommissioningWindowManager.SetAppDelegate(initParams.appDelegate);
 

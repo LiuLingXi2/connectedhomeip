@@ -235,10 +235,12 @@ CHIP_ERROR PlatformManagerImpl::_InitChipStack()
 #endif
 
 #if CHIP_DEVICE_CONFIG_ENABLE_WIFI
+    // gmain-matter监听IP变化
     ReturnErrorOnFailure(RunWiFiIPChangeListener());
 #endif
 
     // Initialize the configuration system.
+    // 再次初始化KVS路径
     ReturnErrorOnFailure(Internal::PosixConfig::Init());
 
     // Call _InitChipStack() on the generic implementation base class
@@ -247,6 +249,8 @@ CHIP_ERROR PlatformManagerImpl::_InitChipStack()
 
     // Now set up our device instance info provider.  We couldn't do that
     // earlier, because the generic implementation sets a generic one.
+    // 设置设备实例信息提供者
+    // 换成Linux的实现
     SetDeviceInstanceInfoProvider(&DeviceInstanceInfoProviderMgrImpl());
 
     mStartTime = System::SystemClock().GetMonotonicTimestamp();

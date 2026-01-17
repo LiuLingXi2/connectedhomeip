@@ -49,9 +49,11 @@ CHIP_ERROR UDP::Init(UdpListenParameters & params)
 
     ChipLogDetail(Inet, "UDP::Init bind&listen port=%d", params.GetListenPort());
 
+    // 绑定并监听
     err = mUDPEndPoint->Bind(params.GetAddressType(), Inet::IPAddress::Any, params.GetListenPort(), params.GetInterfaceId());
     SuccessOrExit(err);
 
+    // 设置 回调函数OnUdpReceive 和 OnUdpError
     err = mUDPEndPoint->Listen(OnUdpReceive, OnUdpError, this);
     SuccessOrExit(err);
 
@@ -110,6 +112,7 @@ void UDP::OnUdpReceive(Inet::UDPEndPoint * endPoint, System::PacketBufferHandle 
 
     CHIP_FAULT_INJECT(FaultInjection::kFault_DropIncomingUDPMsg, buffer = nullptr; return;);
 
+    // 从基类继承的 HandleMessageReceived 方法
     udp->HandleMessageReceived(peerAddress, std::move(buffer));
 
     if (err != CHIP_NO_ERROR)

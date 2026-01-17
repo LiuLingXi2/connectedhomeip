@@ -78,14 +78,17 @@ BLEManagerImpl BLEManagerImpl::sInstance;
 
 CHIP_ERROR BLEManagerImpl::_Init()
 {
+    // 先调用BleLayer层的初始化
     ReturnErrorOnFailure(BleLayer::Init(this, this, this, &DeviceLayer::SystemLayer()));
 
     mServiceMode = ConnectivityManager::kCHIPoBLEServiceMode_Enabled;
     mFlags.ClearAll().Set(Flags::kAdvertisingEnabled, CHIP_DEVICE_CONFIG_CHIPOBLE_ENABLE_ADVERTISING_AUTOSTART && !mIsCentral);
     mFlags.Set(Flags::kFastAdvertisingEnabled, true);
 
+    // 设备名清0
     memset(mDeviceName, 0, sizeof(mDeviceName));
 
+    // 系统级的即返回系统级的systemlayer
     return DeviceLayer::SystemLayer().ScheduleLambda([this] { DriveBLEState(); });
 }
 
@@ -156,7 +159,9 @@ CHIP_ERROR BLEManagerImpl::_SetDeviceName(const char * deviceName)
     else
     {
         uint16_t discriminator;
+        // 得到discriminator码
         ReturnErrorOnFailure(GetCommissionableDataProvider()->GetSetupDiscriminator(discriminator));
+        // 拼接mDeviceName和discriminator
         snprintf(mDeviceName, sizeof(mDeviceName), "%s%04u", CHIP_DEVICE_CONFIG_BLE_DEVICE_NAME_PREFIX, discriminator);
         mDeviceName[kMaxDeviceNameLength] = 0;
         mFlags.Clear(Flags::kUseCustomDeviceName);
@@ -501,6 +506,7 @@ void BLEManagerImpl::DriveBLEState()
     CHIP_ERROR err = CHIP_NO_ERROR;
 
     // Perform any initialization actions that must occur after the Chip task is running.
+    // 被硬编码在这里执行一次就返回，第二次才会往下走
     if (!mFlags.Has(Flags::kAsyncInitCompleted))
     {
         mFlags.Set(Flags::kAsyncInitCompleted);

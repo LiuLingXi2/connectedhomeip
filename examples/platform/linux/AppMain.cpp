@@ -829,7 +829,9 @@ void ChipLinuxAppMainLoop(chip::ServerInitParams & initParams, AppMainLoopImplem
         StopMainEventLoop();
     });
 #endif
+    // 设备在已配网，提供业务流量的监听端口 
     initParams.operationalServicePort        = CHIP_PORT;
+    // 配置UDC协议（配网协议）的监听端口
     initParams.userDirectedCommissioningPort = CHIP_UDC_PORT;
 
 #if CHIP_DEVICE_CONFIG_ENABLE_BOTH_COMMISSIONER_AND_COMMISSIONEE || CHIP_DEVICE_ENABLE_PORT_PARAMS
@@ -932,9 +934,13 @@ void ChipLinuxAppMainLoop(chip::ServerInitParams & initParams, AppMainLoopImplem
 #if CHIP_CONFIG_USE_ACCESS_RESTRICTIONS
     initParams.accessRestrictionProvider = exampleAccessRestrictionProvider.get();
 #endif
-
+    // 怎么进入配网流程？
     if (LinuxDeviceOptions::GetInstance().payload.commissioningFlow == CommissioningFlow::kUserActionRequired)
     {
+        // Server::GetInstance().GetFabricTable().FabricCount() 配网次数
+        // 当为0 时，默认自动进入配网流程
+        // 但是如果指定了 --disable-commissionable-advertising 则不会自动进入配网流程
+        // 需要用户手动触发配网流程
         initParams.advertiseCommissionableIfNoFabrics = false;
     }
 

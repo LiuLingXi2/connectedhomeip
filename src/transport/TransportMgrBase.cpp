@@ -60,6 +60,7 @@ CHIP_ERROR TransportMgrBase::MulticastGroupJoinLeave(const Transport::PeerAddres
     return mTransport->MulticastGroupJoinLeave(address, join);
 }
 
+// 接收数据之后会走到这里
 void TransportMgrBase::HandleMessageReceived(const Transport::PeerAddress & peerAddress, System::PacketBufferHandle && msg,
                                              Transport::MessageTransportContext * ctxt)
 {
@@ -78,6 +79,7 @@ void TransportMgrBase::HandleMessageReceived(const Transport::PeerAddress & peer
 
     if (mSessionManager != nullptr)
     {
+        // 分析包
         mSessionManager->OnMessageReceived(peerAddress, std::move(msg), ctxt);
     }
     else

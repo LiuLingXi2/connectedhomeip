@@ -50,6 +50,7 @@ chip::System::Layer & SystemLayer();
 chip::System::LayerSockets & SystemLayerSockets();
 #endif // CHIP_SYSTEM_CONFIG_USE_SOCKETS
 
+// 直接调用
 inline chip::Inet::EndPointManager<Inet::UDPEndPoint> * UDPEndPointManager()
 {
     return &ConnectivityMgr().UDPEndPointManager();

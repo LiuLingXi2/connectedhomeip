@@ -50,7 +50,7 @@ template <class ImplClass>
 CHIP_ERROR GenericPlatformManagerImpl<ImplClass>::_InitChipStack()
 {
     CHIP_ERROR err;
-
+    // ImplClass是PlatformManagerImpl
     mMsgLayerWasActive = false;
 
     // Arrange for CHIP core errors to be translated to text
@@ -59,6 +59,7 @@ CHIP_ERROR GenericPlatformManagerImpl<ImplClass>::_InitChipStack()
     // Arrange for Device Layer errors to be translated to text.
     RegisterDeviceLayerErrorFormatter();
 
+    // 初始化一个随机数随机种子
     err = InitEntropy();
     if (err != CHIP_NO_ERROR)
     {
@@ -67,6 +68,9 @@ CHIP_ERROR GenericPlatformManagerImpl<ImplClass>::_InitChipStack()
     SuccessOrExit(err);
 
     // Initialize the CHIP system layer.
+
+    // 初始化系统层状态，已经初始化完成
+    // 创建eventfd
     err = SystemLayer().Init();
     if (err != CHIP_NO_ERROR)
     {
@@ -75,6 +79,7 @@ CHIP_ERROR GenericPlatformManagerImpl<ImplClass>::_InitChipStack()
     SuccessOrExit(err);
 
     // Initialize the Configuration Manager.
+    // 配置管理器
     err = ConfigurationMgr().Init();
     if (err != CHIP_NO_ERROR)
     {
@@ -83,6 +88,8 @@ CHIP_ERROR GenericPlatformManagerImpl<ImplClass>::_InitChipStack()
     SuccessOrExit(err);
 
     // Initialize the CHIP UDP layer.
+    // 初始化UDPPonint
+    // SystemLayer()返回的还是mSystemLayerImpl
     err = UDPEndPointManager()->Init(SystemLayer());
     if (err != CHIP_NO_ERROR)
     {
@@ -92,6 +99,7 @@ CHIP_ERROR GenericPlatformManagerImpl<ImplClass>::_InitChipStack()
 
 #if INET_CONFIG_ENABLE_TCP_ENDPOINT
     // Initialize the CHIP TCP layer.
+    // 同上
     err = TCPEndPointManager()->Init(SystemLayer());
     if (err != CHIP_NO_ERROR)
     {
@@ -104,6 +112,7 @@ CHIP_ERROR GenericPlatformManagerImpl<ImplClass>::_InitChipStack()
 
     // Initialize the CHIP BLE manager.
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
+    // 初始化BLE管理器，加入
     err = BLEMgr().Init();
     if (err != CHIP_NO_ERROR)
     {
@@ -113,6 +122,7 @@ CHIP_ERROR GenericPlatformManagerImpl<ImplClass>::_InitChipStack()
 #endif
 
     // Initialize the Connectivity Manager object.
+    // 初始化连接管理器
     err = ConnectivityMgr().Init();
     if (err != CHIP_NO_ERROR)
     {

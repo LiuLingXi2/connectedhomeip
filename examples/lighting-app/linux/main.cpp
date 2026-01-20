@@ -70,6 +70,9 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
  * emberAfPluginOnOffClusterServerPostInitCallback.
  *
  */
+/**
+ * 应用可实现cluster回调
+ */
 void emberAfOnOffClusterInitCallback(EndpointId endpoint)
 {
     // TODO: implement any additional Cluster Server init actions

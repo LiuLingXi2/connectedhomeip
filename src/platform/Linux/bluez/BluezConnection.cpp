@@ -169,6 +169,9 @@ const char * BluezConnection::GetPeerAddress() const
     return bluez_device1_get_address(mDevice.get());
 }
 
+/**
+ * client 写的数据会触发这个回调
+ */
 gboolean BluezConnection::WriteHandlerCallback(GIOChannel * aChannel, GIOCondition aCond, BluezConnection * apConn)
 {
     VerifyOrReturnValue(!(aCond & G_IO_HUP), G_SOURCE_REMOVE,
@@ -186,6 +189,8 @@ gboolean BluezConnection::WriteHandlerCallback(GIOChannel * aChannel, GIOConditi
     // Casting len to size_t is safe, since we ensured that it's not negative.
     bluez_gatt_characteristic1_set_value(
         apConn->mC1.get(), g_variant_new_fixed_array(G_VARIANT_TYPE_BYTE, buf, static_cast<size_t>(len), sizeof(uint8_t)));
+    
+    // 处理接收到的数据
     BLEManagerImpl::HandleRXCharWrite(apConn, buf, static_cast<size_t>(len));
 
     return G_SOURCE_CONTINUE;

@@ -1914,12 +1914,13 @@ DataModel::Provider * InteractionModelEngine::SetDataModelProvider(DataModel::Pr
     // Altering data model should not be done while IM is actively handling requests.
     VerifyOrDie(mReadHandlers.begin() == mReadHandlers.end());
 
+    //
     if (model == mDataModelProvider)
     {
         // no-op, just return
         return model;
     }
-
+    // 关闭老的DM provider
     DataModel::Provider * oldModel = mDataModelProvider;
     if (oldModel != nullptr)
     {
@@ -1930,6 +1931,7 @@ DataModel::Provider * InteractionModelEngine::SetDataModelProvider(DataModel::Pr
         }
     }
 
+    // 设置现在的provider
     mDataModelProvider = model;
     if (mDataModelProvider != nullptr)
     {

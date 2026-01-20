@@ -195,17 +195,28 @@ void emberAfEndpointConfigure()
 {
     uint16_t ep;
 
+    /**
+     * FIXED_ENDPOINT_COUNT表示固定端点的数量，这些端点在编译时已经确定
+     * 用于来给数组或其他数据结构分配足够的空间，以存储这些固定端点的信息
+     * 通过静态断言确保FIXED_ENDPOINT_COUNT不会超过emAfEndpoints数组
+     */
     static_assert(FIXED_ENDPOINT_COUNT <= std::numeric_limits<decltype(ep)>::max(),
                   "FIXED_ENDPOINT_COUNT must not exceed the size of the endpoint data type");
-
+    // 即endpoint的数量
     emberEndpointCount = FIXED_ENDPOINT_COUNT;
 
 #if FIXED_ENDPOINT_COUNT > 0
+    // 这些常量数组都是由ZAP工具生成的，包含了固定端点的各种配置信息 编译期确定
 
+    // 编译期的固定端口ID列表，每项是一个endpoint ID
     constexpr uint16_t fixedEndpoints[]             = FIXED_ENDPOINT_ARRAY;
+    // 每个端点对应的设备类型列表的长度 从fixedDeviceTypeList数组中寻找
     constexpr uint16_t fixedDeviceTypeListLengths[] = FIXED_DEVICE_TYPE_LENGTHS;
+    // 每个端点对应的设备类型列表在fixedDeviceTypeList数组中的偏移量
     constexpr uint16_t fixedDeviceTypeListOffsets[] = FIXED_DEVICE_TYPE_OFFSETS;
+    // 每个端点对应的端点类型在generatedEmberAfEndpointTypes数组中的索引
     constexpr uint8_t fixedEmberAfEndpointTypes[]   = FIXED_ENDPOINT_TYPES;
+    // 每个端点的父端点ID列表
     constexpr EndpointId fixedParentEndpoints[]     = FIXED_PARENT_ENDPOINTS;
 
 #if ZAP_FIXED_ENDPOINT_DATA_VERSION_COUNT > 0
@@ -224,6 +235,10 @@ void emberAfEndpointConfigure()
     DataVersion * currentDataVersions = fixedEndpointDataVersions;
     for (ep = 0; ep < FIXED_ENDPOINT_COUNT; ep++)
     {
+        /**
+         * emAfEndpoints 是全局数组
+         * 用于存储每个端点的配置信息，包括端点ID、设备类型列表、端点类型、数据版本和父端点ID等
+         */
         emAfEndpoints[ep].endpoint = fixedEndpoints[ep];
         emAfEndpoints[ep].deviceTypeList =
             Span<const EmberAfDeviceType>(&fixedDeviceTypeList[fixedDeviceTypeListOffsets[ep]], fixedDeviceTypeListLengths[ep]);
@@ -473,6 +488,7 @@ static void initializeEndpoint(EmberAfDefinedEndpoint * definedEndpoint)
 {
     uint8_t clusterIndex;
     const EmberAfEndpointType * epType = definedEndpoint->endpointType;
+    // 初始化他的每个cluster
     for (clusterIndex = 0; clusterIndex < epType->clusterCount; clusterIndex++)
     {
         const EmberAfCluster * cluster = &(epType->cluster[clusterIndex]);
@@ -481,9 +497,12 @@ static void initializeEndpoint(EmberAfDefinedEndpoint * definedEndpoint)
         {
             // Call the code-driven init callback before the emberAf... one,
             // so the latter can be used to configure code-driven clusters
+            // 给code driver server cluster一个统一的初始化入口
             MatterClusterServerInitCallback(definedEndpoint->endpoint, cluster->clusterId);
         }
+        // 触发ZCL层的cluster通用初始化回调，完成初始化
         emberAfClusterInitCallback(definedEndpoint->endpoint, cluster->clusterId);
+        // 调用返回的初始化函数指针
         f = emberAfFindClusterFunction(cluster, MATTER_CLUSTER_FLAG_INIT_FUNCTION);
         if (f != nullptr)
         {
@@ -519,8 +538,10 @@ static void shutdownEndpoint(EmberAfDefinedEndpoint * definedEndpoint, MatterClu
 void emAfCallInits()
 {
     uint16_t index;
+    // 遍历每个endpoint
     for (index = 0; index < emberAfEndpointCount(); index++)
     {
+        // 如果当前端点启用，则初始化该端点
         if (emberAfEndpointIndexIsEnabled(index))
         {
             initializeEndpoint(&(emAfEndpoints[index]));
@@ -1256,6 +1277,7 @@ void emAfLoadAttributeDefaults(EndpointId endpoint, Optional<ClusterId> clusterI
     // Don't check whether we actually have an attrStorage here, because it's OK
     // to have one if none of our attributes have NVM storage.
 
+    // 遍历每个endpoint
     for (ep = 0; ep < epCount; ep++)
     {
         EmberAfDefinedEndpoint * de;
@@ -1267,11 +1289,14 @@ void emAfLoadAttributeDefaults(EndpointId endpoint, Optional<ClusterId> clusterI
                 return;
             }
         }
+        // 获取当前端点的配置信息
         de = &(emAfEndpoints[ep]);
 
+        // 遍历每个endpoint的cluster（没见到endpoint的DeviceType啥用处，就没管）
         for (clusterI = 0; clusterI < de->endpointType->clusterCount; clusterI++)
         {
             const EmberAfCluster * cluster = &(de->endpointType->cluster[clusterI]);
+            // 这里传入的是空参数
             if (clusterId.HasValue())
             {
                 if (clusterId.Value() != cluster->clusterId)
@@ -1288,12 +1313,14 @@ void emAfLoadAttributeDefaults(EndpointId endpoint, Optional<ClusterId> clusterI
             {
                 // halResetWatchdog();
             }
+            // 遍历每个cluster的attribute
             for (attr = 0; attr < cluster->attributeCount; attr++)
             {
                 const EmberAfAttributeMetadata * am = &(cluster->attributes[attr]);
                 ptr                                 = nullptr; // Will get set to the value to write, as needed.
 
                 // First check for a persisted value.
+                // 第一次先检查是否有持久化的值 一般是检查属性的标志，如果是第一次，会失败报错
                 if (am->IsAutomaticallyPersisted())
                 {
                     VerifyOrDieWithMsg(attrStorage != nullptr, Zcl, "Attribute persistence needs a persistence provider");

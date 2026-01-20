@@ -29,10 +29,12 @@ CodegenDataModelProvider & CodegenDataModelProvider::Instance()
 
 DataModel::Provider * CodegenDataModelProviderInstance(PersistentStorageDelegate * delegate)
 {
+    // 设置instance = gCodegenModel
     auto instance = &CodegenDataModelProvider::Instance();
 
     if (delegate != nullptr)
     {
+        // mPersistentStorageDelegate = delegate
         instance->SetPersistentStorageDelegate(delegate);
     }
 

@@ -90,6 +90,7 @@ public:
         T startValue;
 
         // Read our previously-stored starting value.
+        // 读出开始值，一般为0
         ReturnErrorOnFailure(ReadStartValue(startValue));
 
 #if CHIP_CONFIG_PERSISTED_COUNTER_DEBUG_LOGGING
@@ -105,6 +106,7 @@ public:
         }
 #endif
 
+        // 写入0
         ReturnErrorOnFailure(PersistNextEpochStart(static_cast<T>(startValue + aEpoch)));
 
         // This will set the starting value, after which we're ready.

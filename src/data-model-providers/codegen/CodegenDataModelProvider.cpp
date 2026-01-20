@@ -153,6 +153,7 @@ CHIP_ERROR CodegenDataModelProvider::Startup(DataModel::InteractionModelContext 
         SetAttributePersistenceProvider(&gDefaultAttributePersistence);
     }
 
+    // 初始化数据模型
     InitDataModelForTesting();
 
     return mRegistry.SetContext(ServerClusterContext{
@@ -515,7 +516,7 @@ CHIP_ERROR CodegenDataModelProvider::GeneratedCommands(const ConcreteClusterPath
 
 void CodegenDataModelProvider::InitDataModelForTesting()
 {
-    // Call the Ember-specific InitDataModelHandler
+    // 初始化数据模型
     InitDataModelHandler();
 }
 

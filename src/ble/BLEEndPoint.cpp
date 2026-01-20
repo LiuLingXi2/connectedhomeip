@@ -534,6 +534,10 @@ CHIP_ERROR BLEEndPoint::Init(BleLayer * bleLayer, BLE_CONNECTION_OBJECT connObj,
     mSendQueue               = nullptr;
     mAckToSend               = nullptr;
 
+    // 处理对端发送过来的BTP capability请求：
+    /**
+     * 协商接收窗口 ，选择BTP协议版本及分片大小，构造队列发送capability response，为后续可靠传输做准备
+     */
     ChipLogDebugBleEndPoint(Ble, "initialized local rx window, size = %u", mLocalReceiveWindowSize);
 
     // End point is ready to connect or receive a connection.
@@ -1283,6 +1287,7 @@ CHIP_ERROR BLEEndPoint::Receive(PacketBufferHandle && data)
         if (mBleTransport != nullptr && mState != kState_Closing)
         {
             // Pass received message up the stack.
+            // 将包传递到上层
             mBleTransport->OnEndPointMessageReceived(this, std::move(full_packet));
         }
     }

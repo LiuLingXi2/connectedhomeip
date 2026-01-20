@@ -65,16 +65,16 @@ CHIP_ERROR ChipLinuxStorage::Init(const char * configFile)
 
     // 将configFile字符串存入mConfigPath
     mConfigPath.assign(configFile);
-    // 清理mConfigStore变量
+    // 清理内存中的mConfigStore变量
     retval = ChipLinuxStorageIni::Init();
 
     if (retval == CHIP_NO_ERROR)
     {
         std::ifstream ifs;
-
+        // 打开配置文件configFile
         ifs.open(configFile, std::ifstream::in);
 
-        // Create default setting file if not exist.    
+        // 创建默认设置文件（如果不存在的话）    
         if (!ifs.good())
         {
             mDirty = true;

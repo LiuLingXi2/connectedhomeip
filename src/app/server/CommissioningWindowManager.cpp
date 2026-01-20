@@ -255,12 +255,14 @@ CHIP_ERROR CommissioningWindowManager::OpenCommissioningWindow(Seconds32 commiss
     auto & failSafeContext = Server::GetInstance().GetFailSafeContext();
     VerifyOrReturnError(failSafeContext.IsFailSafeFullyDisarmed(), CHIP_ERROR_INCORRECT_STATE);
 
+    // 更新mDNS实例名，让接下来的广播都是最新的
     ReturnErrorOnFailure(Dnssd::ServiceAdvertiser::Instance().UpdateCommissionableInstanceName());
 
     ReturnErrorOnFailure(DeviceLayer::SystemLayer().StartTimer(commissioningTimeout, HandleCommissioningWindowTimeout, this));
 
     mCommissioningTimeoutTimerArmed = true;
 
+    // 开始监听PASE + 启动广播
     return AdvertiseAndListenForPASE();
 }
 
@@ -303,6 +305,7 @@ CHIP_ERROR CommissioningWindowManager::AdvertiseAndListenForPASE()
                                                             GetLocalMRPConfig(), this));
     }
 
+    // 开始广播
     ReturnErrorOnFailure(StartAdvertisement());
 
     return CHIP_NO_ERROR;
@@ -487,6 +490,7 @@ CHIP_ERROR CommissioningWindowManager::StartAdvertisement()
 {
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     // notify device layer that advertisement is beginning (to do work such as increment rotating id)
+    // 写文件
     DeviceLayer::ConfigurationMgr().NotifyOfAdvertisementStart();
 #endif
 
@@ -520,6 +524,7 @@ CHIP_ERROR CommissioningWindowManager::StartAdvertisement()
     }
 
     // reset all advertising, switching to our new commissioning mode.
+    // 启动Server
     app::DnssdServer::Instance().StartServer();
 
     return CHIP_NO_ERROR;

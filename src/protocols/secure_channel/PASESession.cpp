@@ -169,6 +169,8 @@ CHIP_ERROR PASESession::Init(SessionManager & sessionManager, uint32_t setupCode
     ReturnErrorOnFailure(mCommissioningHash.AddData(ByteSpan{ Uint8::from_const_char(kSpake2pContext), strlen(kSpake2pContext) }));
 
     mDelegate = delegate;
+    // 创建session，并分配本地session id LSID local session ID
+    // 在会话表中开了一个slot Type表示这是PASE会话
     ReturnErrorOnFailure(AllocateSecureSession(sessionManager));
     VerifyOrReturnError(GetLocalSessionId().HasValue(), CHIP_ERROR_INCORRECT_STATE);
     ChipLogDetail(SecureChannel, "Assigned local session key ID %u", GetLocalSessionId().Value());
@@ -214,6 +216,7 @@ CHIP_ERROR PASESession::WaitForPairing(SessionManager & sessionManager, const Sp
     VerifyOrReturnError(salt.size() >= kSpake2p_Min_PBKDF_Salt_Length && salt.size() <= kSpake2p_Max_PBKDF_Salt_Length,
                         CHIP_ERROR_INVALID_ARGUMENT);
 
+    // 
     CHIP_ERROR err = Init(sessionManager, kSetupPINCodeUndefinedValue, delegate);
     // From here onwards, let's go to exit on error, as some state might have already
     // been initialized

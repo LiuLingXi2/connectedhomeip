@@ -25,6 +25,9 @@ using namespace ::chip;
 void InitDataModelHandler()
 {
     ChipLogProgress(Zcl, "Using ZAP configuration...");
+    // 根据zap文件生成静态表
+    // emAfEndpoints[ep]、de->endpointType、cluster->clusterId
     emberAfEndpointConfigure();
+    // 初始化属性存储
     emberAfInit();
 }

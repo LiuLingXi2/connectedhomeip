@@ -143,6 +143,7 @@ CHIP_ERROR Server::Init(const ServerInitParams & initParams)
     VerifyOrExit(initParams.reportScheduler != nullptr, err = CHIP_ERROR_INVALID_ARGUMENT);
 
     // Extra log since this is an incremental requirement and existing applications may not be aware
+    // 已经是全局的了
     if (initParams.dataModelProvider == nullptr)
     {
         ChipLogError(AppServer, "Application Server requires a `initParams.dataModelProvider` value.");
@@ -275,7 +276,6 @@ CHIP_ERROR Server::Init(const ServerInitParams & initParams)
 #endif
     );
 
-    // 组播。默认不使用
     // 他实现了两个回调 OnGroupAdded和OnGroupRemoved
     // 每当某个 Fabric 的某个 group 被加/删，这个 listener 会拿到通知
     SuccessOrExit(err);
@@ -326,6 +326,7 @@ ExchangeManager 建立在会话之上，负责“Exchange”（会话内的逻�
 
 #if CHIP_CONFIG_ENABLE_SERVER_IM_EVENT
     // Initialize event logging subsystem
+    // 他会把事件ID计数器的起始值写入/tmp/chip_kvs
     err = sGlobalEventIdCounter.Init(mDeviceStorage, DefaultStorageKeyAllocator::IMEventNumber(),
                                      CHIP_DEVICE_CONFIG_EVENT_ID_COUNTER_EPOCH);
     SuccessOrExit(err);
@@ -361,6 +362,10 @@ ExchangeManager 建立在会话之上，负责“Exchange”（会话内的逻�
     //
     // This remains the single point of entry to ensure that all cluster-level
     // initialization is performed in the correct order.
+    // 设置数据模型提供者
+    // datamodelprovider启动所有server的cluster
+    // 每个cluster的startup里调用LogEvent
+
     app::InteractionModelEngine::GetInstance()->SetDataModelProvider(initParams.dataModelProvider);
 
 #if defined(CHIP_APP_USE_ECHO)
@@ -398,6 +403,7 @@ ExchangeManager 建立在会话之上，负责“Exchange”（会话内的逻�
     }
     else if (initParams.advertiseCommissionableIfNoFabrics)
     {
+        // 
         SuccessOrExit(err = mCommissioningWindowManager.OpenBasicCommissioningWindow(initParams.discoveryTimeout));
     }
 
@@ -512,6 +518,11 @@ ExchangeManager 建立在会话之上，负责“Exchange”（会话内的逻�
     }
 
 #if CHIP_DEVICE_CONFIG_ENABLE_COMMISSIONER_DISCOVERY_CLIENT // support UDC port for commissioner declaration msgs
+    /**
+     * UDC功能：用户定向配网（User Directed Commissioning）
+     * 允许已经有权限的设备（比如手机App）通过UDP广播的方式，告诉“我在这里，可以来配网我哦~”
+     * 这样的话，
+     */
     mUdcTransportMgr = Platform::New<UdcTransportMgr>();
     ReturnErrorOnFailure(mUdcTransportMgr->Init(Transport::UdpListenParameters(DeviceLayer::UDPEndPointManager())
                                                     .SetAddressType(Inet::IPAddressType::kIPv6)
